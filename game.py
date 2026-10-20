@@ -421,6 +421,19 @@ ROLE_DESCRIPTIONS = {
     "Ranger": "A deadly hunter. Poisoned Arrow damages over time.",
 }
 
+VICTORY_TIPS = (
+    "Each normal attack adds one charge toward your special.",
+    "Potions restore up to 40 HP. Save them for wounds worth healing.",
+    (
+        "A stunned foe loses its turn. The Warrior's Shield Bash can "
+        "create that opening."
+    ),
+    "The Mage's Meteor Storm hits for triple attack power.",
+    "Shadowstep lets a Rogue avoid the enemy's next strike.",
+    "A Ranger's poison keeps dealing damage after the arrow lands.",
+    "The Ancient Dragon and the Creator unleash stronger attacks every third turn.",
+)
+
 
 def health_bar(current, maximum, width=20):
     filled = max(0, min(width, round(width * current / maximum)))
@@ -633,6 +646,9 @@ def show_start_screen():
             print("\033[1;97m" + "  USE HEADPHONES".center(62) + "\033[0m")
             print()
             print("\033[90m" + "For the best experience".center(62) + "\033[0m")
+            print()
+            omen = "\033[1;91m" if (frame // 4) % 2 == 0 else "\033[31m"
+            print(omen + "TIP: YOUR CHOICES HAVE CONSEQUENCES".center(62) + "\033[0m")
             print()
             draw_fantasy_scene(frame)
             print()
@@ -990,6 +1006,41 @@ def fight(hero, encounter, encounter_number):
     return "defeat"
 
 
+def claim_victory_boon(hero):
+    print("\n\033[1;91mTHE DARKNESS OFFERS A BOON. CHOOSE WISELY.\033[0m")
+    print(
+        f"  1  Mend your wounds: restore up to 30 HP "
+        f"(currently {hero.health}/{hero.max_health})"
+    )
+    if hero.potions < 5:
+        print(f"  2  Salvage a potion: gain 1 (currently {hero.potions}/5)")
+    else:
+        print("  2  Salvage a potion: unavailable (satchel full)")
+    print(
+        f"  3  Sharpen your weapon: +2 attack power "
+        f"(currently {hero.attack_power})"
+    )
+
+    while True:
+        choice = input("\nChoose your boon (1-3): ").strip().lower()
+        if choice in ("1", "mend"):
+            restored = hero.heal(30)
+            print(f"You recover {restored} HP.")
+            return
+        if choice in ("2", "potion"):
+            if hero.potions >= 5:
+                print("Your potion satchel is full. Choose another boon.")
+                continue
+            hero.potions += 1
+            print(f"You salvage a potion. Potions: {hero.potions}/5.")
+            return
+        if choice in ("3", "sharpen"):
+            hero.attack_power += 2
+            print(f"Your attack power rises to {hero.attack_power} for this run.")
+            return
+        print("Choose 1, 2, or 3.")
+
+
 def play_game():
     if not sys.stdout.isatty():
         print_title()
@@ -1020,6 +1071,9 @@ def play_game():
         print("Victory!")
         for message in hero.gain_experience(encounter["reward"]):
             print(message)
+        tip = VICTORY_TIPS[(victories - 1) % len(VICTORY_TIPS)]
+        print(f"\n\033[1;91mTHE DARKNESS WHISPERS: {tip}\033[0m")
+        claim_victory_boon(hero)
         if index < len(ENCOUNTERS):
             input("\nPress Enter to continue...")
 
@@ -1039,6 +1093,7 @@ def play_game():
     print(f"Hero: {hero}")
     print(f"Encounters won: {victories}/{len(ENCOUNTERS)}")
     print(f"Total damage dealt: {hero.total_damage}")
+    print(f"Attack power: {hero.attack_power}")
     print(f"Potions remaining: {hero.potions}")
     print(f"Final health: {hero.health}/{hero.max_health}")
     return True

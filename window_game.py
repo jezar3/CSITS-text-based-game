@@ -431,6 +431,8 @@ class GameWindow:
             label = "YOUR NAME"
         elif "continue" in prompt_text.lower():
             label = "CONTINUE"
+        elif "boon" in prompt_text.lower() or "reward" in prompt_text.lower():
+            label = "VICTORY BOON"
         else:
             label = "YOUR MOVE"
         tk.Label(
