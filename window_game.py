@@ -96,6 +96,15 @@ class GameWindow:
         self.input_frame = None
         self.output = WindowOutput(self.events)
 
+        icon_directory = getattr(
+            sys,
+            "_MEIPASS",
+            os.path.dirname(os.path.abspath(__file__)),
+        )
+        icon_path = os.path.join(icon_directory, "icon.png")
+        self.window_icon = tk.PhotoImage(file=icon_path)
+        root.iconphoto(True, self.window_icon)
+
         root.title("The Emberfall Chronicles")
         screen_width = root.winfo_screenwidth()
         screen_height = root.winfo_screenheight()
@@ -282,20 +291,14 @@ class GameWindow:
             return
 
         lines = self.screen.get("1.0", "end-1c").splitlines()
-        line_count = max(1, len(lines))
         widest_line = max((len(line) for line in lines), default=1)
         available_width = max(1, self.screen.winfo_width() - 48)
-        available_height = max(1, self.screen.winfo_height() - 40)
 
         selected_size = 7
         for size in range(13, 6, -1):
             self.game_font.configure(size=size)
             line_width = widest_line * self.game_font.measure("M")
-            line_height = self.game_font.metrics("linespace") + 1
-            if (
-                line_width <= available_width
-                and line_count * line_height <= available_height
-            ):
+            if line_width <= available_width:
                 selected_size = size
                 break
 
@@ -331,10 +334,12 @@ class GameWindow:
                 self.action_prompt
                 and self.entry is not None
                 and action in {"a", "s", "p", "f"}
-                and self.entry.get().strip().lower() == action
             ):
-                self.submit_answer()
-                return "break"
+                if not self.entry.get().strip():
+                    self.entry.insert(0, action)
+                if self.entry.get().strip().lower() == action:
+                    self.submit_answer()
+                    return "break"
             return
         if not self.key_mode:
             return

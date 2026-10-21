@@ -884,16 +884,17 @@ def show_status(hero, enemy, encounter_number, art):
     print(f"  Health:  {health_bar(enemy.health, enemy.max_health)}")
 
 
-def player_turn(hero, enemy):
-    print("\n\033[1;96mYOUR TURN\033[0m")
-    print("  A  Attack the enemy")
-    print(
-        f"  S  Use {hero.special_name} "
-        f"({hero.resource // hero.special_cost} ready)"
-    )
-    print("  P  Drink a health potion")
-    print("  F  Flee from the fight")
-    action = input("> ").strip().lower()
+def player_turn(hero, enemy, show_menu=True):
+    if show_menu:
+        print("\n\033[1;96mYOUR TURN\033[0m")
+        print("  \033[1;91mA\033[0m  \033[91mAttack the enemy\033[0m")
+        print(
+            f"  \033[1;95mS\033[0m  \033[95mUse {hero.special_name} "
+            f"({hero.resource // hero.special_cost} ready)\033[0m"
+        )
+        print("  \033[1;92mP\033[0m  \033[92mDrink a health potion\033[0m")
+        print("  \033[1;94mF\033[0m  \033[94mFlee from the fight\033[0m")
+    action = input("\033[1;96m>\033[0m ").strip().lower()
 
     if action in ("a", "attack", "1"):
         animate_attack(enemy)
@@ -906,7 +907,7 @@ def player_turn(hero, enemy):
     if action in ("s", "special", "2"):
         if hero.resource < hero.special_cost:
             print(
-                f"Not enough {hero.resource_name}. "
+                f"\033[1;93mNot enough {hero.resource_name}.\033[0m "
                 f"Attack to build up your special "
                 f"({hero.resource}/{hero.special_cost} charge points)."
             )
@@ -923,10 +924,14 @@ def player_turn(hero, enemy):
 
     if action in ("p", "potion", "3"):
         if hero.potions == 0:
-            print("You have no healing potions left.")
+            print("\033[1;91mYou have no healing potions left.\033[0m")
             return False
         if hero.health == hero.max_health:
-            print("You are already at full health.")
+            print(
+                f"\033[1;93mHP is already full "
+                f"({hero.health}/{hero.max_health}). "
+                "Your potion was not used.\033[0m"
+            )
             return False
         hero.potions -= 1
         restored = hero.heal(40)
@@ -937,7 +942,7 @@ def player_turn(hero, enemy):
         print("You retreat from the adventure.")
         return None
 
-    print("Choose A, S, P, or F.")
+    print("\033[1;91mChoose A, S, P, or F.\033[0m")
     return False
 
 
@@ -988,11 +993,14 @@ def fight(hero, encounter, encounter_number):
     while hero.health > 0 and enemy.health > 0:
         clear_screen()
         show_status(hero, enemy, encounter_number, encounter["art"])
-        result = player_turn(hero, enemy)
+        show_menu = True
+        while True:
+            result = player_turn(hero, enemy, show_menu=show_menu)
+            if result is not False:
+                break
+            show_menu = False
         if result is None:
             return "fled"
-        if result is False:
-            continue
         if enemy.health == 0:
             print(f"\n{enemy.name} is defeated!")
             return "victory"
@@ -1077,25 +1085,38 @@ def play_game():
         if index < len(ENCOUNTERS):
             input("\nPress Enter to continue...")
 
-    print(f"\n{'=' * 58}")
+    print(f"\n\033[1;96m{'=' * 58}\033[0m")
     if result == "victory":
-        print(r"""
+        print("\033[1;92m" + r"""
      /\        /\        /\        /\
     /  \  /\  /  \  /\  /  \  /\  /  \
    /____\/__\/____\/__\/____\/__\/____\
        THE KINGDOM IS SAFE. YOU ARE A LEGEND.
-""")
+""" + "\033[0m")
     elif result == "defeat":
-        print("YOUR QUEST ENDS HERE")
+        print("\033[1;91mYOUR QUEST ENDS HERE\033[0m")
     else:
-        print("THE QUEST WILL WAIT FOR YOUR RETURN.")
+        print("\033[1;94mTHE QUEST WILL WAIT FOR YOUR RETURN.\033[0m")
 
-    print(f"Hero: {hero}")
-    print(f"Encounters won: {victories}/{len(ENCOUNTERS)}")
-    print(f"Total damage dealt: {hero.total_damage}")
-    print(f"Attack power: {hero.attack_power}")
-    print(f"Potions remaining: {hero.potions}")
-    print(f"Final health: {hero.health}/{hero.max_health}")
+    print(f"\033[96mHero:\033[0m \033[97m{hero}\033[0m")
+    print(
+        f"\033[96mEncounters won:\033[0m "
+        f"\033[93m{victories}/{len(ENCOUNTERS)}\033[0m"
+    )
+    print(f"\033[96mTotal damage dealt:\033[0m \033[95m{hero.total_damage}\033[0m")
+    print(f"\033[96mAttack power:\033[0m \033[91m{hero.attack_power}\033[0m")
+    print(f"\033[96mPotions remaining:\033[0m \033[92m{hero.potions}\033[0m")
+    health_color = (
+        "\033[92m"
+        if hero.health > hero.max_health // 2
+        else "\033[93m"
+        if hero.health > 0
+        else "\033[91m"
+    )
+    print(
+        f"\033[96mFinal health:\033[0m "
+        f"{health_color}{hero.health}/{hero.max_health}\033[0m"
+    )
     return True
 
 
